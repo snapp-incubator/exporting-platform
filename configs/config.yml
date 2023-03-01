@@ -1,0 +1,5 @@
+exporter:
+  address: "<address for our exporter to serve on (host + port)"
+harbor:
+  address: "<address of harbor (host + port)>"
+  token_path: "<path to token file>"
