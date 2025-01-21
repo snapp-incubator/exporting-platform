@@ -7,7 +7,6 @@ toolchain go1.22.3
 require (
 	github.com/gin-gonic/gin v1.9.0
 	github.com/gophercloud/gophercloud v1.14.1
-	github.com/gophercloud/gophercloud/v2 v2.4.0
 	github.com/ilyakaznacheev/cleanenv v1.4.2
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0

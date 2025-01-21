@@ -1,4 +1,4 @@
-FROM golang:1.18
+FROM golang:1.22
 WORKDIR /app
 COPY ./ ./
 RUN cd cmd && go mod download && CGO_ENABLED=0 go build -o app .
