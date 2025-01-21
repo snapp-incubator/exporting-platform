@@ -2,10 +2,11 @@ package configs
 
 import (
 	"fmt"
-	"github.com/ilyakaznacheev/cleanenv"
-	"go.uber.org/multierr"
 	"os"
 	"strings"
+
+	"github.com/ilyakaznacheev/cleanenv"
+	"go.uber.org/multierr"
 )
 
 type Config struct {
@@ -20,6 +21,9 @@ type Config struct {
 		TokenPath string `json:"token_path" yaml:"token_path"`
 		UseTLS    bool   `json:"use_tls" yaml:"use_tls"`
 	} `json:"harbor" yaml:"harbor"`
+	Keystone struct {
+		Enabled bool `json:"enabled" yaml:"enabled"`
+	}
 }
 
 func Load(filePath string) (*Config, error) {
@@ -40,6 +44,8 @@ func Default() *Config {
 
 	cfg.Harbor.Enabled = true
 	cfg.Harbor.UseTLS = true
+
+	cfg.Keystone.Enabled = true
 
 	return cfg
 }

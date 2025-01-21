@@ -3,3 +3,4 @@ exporter:
 harbor:
   address: "<address of harbor (host + port)>"
   token_path: "<path to token file>"
+
