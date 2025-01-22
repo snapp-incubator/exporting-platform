@@ -2,13 +2,16 @@ package exporters
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/gophercloud/gophercloud/openstack/identity/v3/projects"
+	"context"
+
+	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
+	"github.com/gophercloud/gophercloud/v2/openstack/config"
+	"github.com/gophercloud/gophercloud/v2/openstack/config/clouds"
+	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projects"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -23,19 +26,18 @@ type KeyStoneCollector struct {
 }
 
 func authenticate() (*gophercloud.ServiceClient, error) {
-	opts, err := openstack.AuthOptionsFromEnv()
+	ctx := context.Background()
+	authOptions, endpointOptions, tlsConfig, err := clouds.Parse()
 	if err != nil {
 		fmt.Println("Error happened", err)
 	}
 
-	providerClient, err := openstack.AuthenticatedClient(opts)
+	providerClient, err := config.NewProviderClient(ctx, authOptions, config.WithTLSConfig(tlsConfig))
 	if err != nil {
 		fmt.Println("Error happened", err)
 	}
 
-	computeClient, err := openstack.NewComputeV2(providerClient, gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	})
+	computeClient, err := openstack.NewComputeV2(providerClient, endpointOptions)
 	if err != nil {
 		fmt.Println("Error happened", err)
 	}
@@ -84,7 +86,8 @@ func (kc *KeyStoneCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	allPages, err := projects.List(client, projects.ListOpts{}).AllPages()
+	ctx := context.Background()
+	allPages, err := projects.List(client, projects.ListOpts{}).AllPages(ctx)
 	if err != nil {
 		fmt.Printf("Error listing projects: %v\n", err)
 		return
