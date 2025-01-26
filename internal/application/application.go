@@ -4,13 +4,14 @@ import (
 	"context"
 	"exporting_platform/configs"
 	"exporting_platform/internal/exporters"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	ginLogrus "github.com/toorop/gin-logrus"
-	"net/http"
-	"time"
 )
 
 type Application struct {
@@ -41,6 +42,9 @@ func (a *Application) registerExporters() {
 	log.Debug("Registering Exporters")
 	if a.Config.Harbor.Enabled {
 		prometheus.MustRegister(exporters.NewHarborCollector(a.Config.Harbor.Address, a.Config.Harbor.Token, a.Config.Harbor.UseTLS))
+	}
+	if a.Config.Keystone.Enabled {
+		prometheus.MustRegister(exporters.NewKeystoneCollector())
 	}
 }
 

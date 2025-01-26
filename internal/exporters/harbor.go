@@ -3,11 +3,12 @@ package exporters
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -72,7 +73,7 @@ func (h *HarborCollector) collectHarborRegistryBackendHealthStatus(ch chan<- pro
 	}
 
 	defer resp.Body.Close()
-	responseBody, err := ioutil.ReadAll(resp.Body)
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error happened", err)
 		return
