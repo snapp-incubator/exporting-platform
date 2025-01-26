@@ -29,20 +29,18 @@ func authenticate() (*gophercloud.ServiceClient, error) {
 	ctx := context.Background()
 	authOptions, endpointOptions, tlsConfig, err := clouds.Parse()
 	if err != nil {
-		fmt.Println("Error happened", err)
+		fmt.Printf("keystone authentication: could not parse cloud.yaml: %s\n", err)
 	}
 
 	providerClient, err := config.NewProviderClient(ctx, authOptions, config.WithTLSConfig(tlsConfig))
 	if err != nil {
-		fmt.Println("Error happened", err)
+		fmt.Printf("keystone authentication: could not create provider client: %s\n", err)
 	}
-
-	computeClient, err := openstack.NewComputeV2(providerClient, endpointOptions)
+	identityClient, err := openstack.NewIdentityV3(providerClient, endpointOptions)
 	if err != nil {
-		fmt.Println("Error happened", err)
+		fmt.Printf("keystone authentication: could not create identity client: %s\n", err)
 	}
-
-	return computeClient, nil
+	return identityClient, nil
 }
 
 func NewKeystoneCollector() *KeyStoneCollector {
@@ -110,8 +108,12 @@ func (kc *KeyStoneCollector) Collect(ch chan<- prometheus.Metric) {
 		if len(p.Tags) > 0 {
 			tagString = strings.Join(p.Tags, ",")
 		}
-
-		team := "kia"
+		var team string
+		if p.Extra["team"] != nil {
+			team = p.Extra["team"].(string)
+		} else {
+			team = ""
+		}
 
 		ch <- prometheus.MustNewConstMetric(
 			kc.metrics["project_info"].Metric,
@@ -127,6 +129,5 @@ func (kc *KeyStoneCollector) Collect(ch chan<- prometheus.Metric) {
 			tagString,
 			team,
 		)
-		fmt.Println(p.Name, p.ID)
 	}
 }
