@@ -29,18 +29,18 @@ func authenticate() (*gophercloud.ServiceClient, error) {
 	ctx := context.Background()
 	authOptions, endpointOptions, tlsConfig, err := clouds.Parse()
 	if err != nil {
-		fmt.Printf("keystone authentication: could not parse cloud.yaml: %s\n", err)
+		fmt.Printf("could not parse cloud.yaml: %s\n", err)
 		return nil, err
 	}
 
 	providerClient, err := config.NewProviderClient(ctx, authOptions, config.WithTLSConfig(tlsConfig))
 	if err != nil {
-		fmt.Printf("keystone authentication: could not create provider client: %s\n", err)
+		fmt.Printf("could not create provider client: %s\n", err)
 		return nil, err
 	}
 	identityClient, err := openstack.NewIdentityV3(providerClient, endpointOptions)
 	if err != nil {
-		fmt.Printf("keystone authentication: could not create identity client: %s\n", err)
+		fmt.Printf("could not create identity client: %s\n", err)
 		return nil, err
 	}
 	return identityClient, nil
