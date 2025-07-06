@@ -2,6 +2,7 @@ package exporters
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -23,10 +24,12 @@ type Metric struct {
 
 type KeyStoneCollector struct {
 	metrics map[string]Metric
+	cloud   string
 }
 
-func authenticate() (*gophercloud.ServiceClient, error) {
+func authenticate(cloud string) (*gophercloud.ServiceClient, error) {
 	ctx := context.Background()
+	os.Setenv("OS_CLOUD", cloud)
 	authOptions, endpointOptions, tlsConfig, err := clouds.Parse()
 	if err != nil {
 		fmt.Printf("could not parse cloud.yaml: %s\n", err)
@@ -46,7 +49,7 @@ func authenticate() (*gophercloud.ServiceClient, error) {
 	return identityClient, nil
 }
 
-func NewKeystoneCollector() *KeyStoneCollector {
+func NewKeystoneCollector(cloud string) *KeyStoneCollector {
 	projectMetrics := []Metric{
 		{Name: "projects"},
 		{Name: "project_info", Labels: []string{
@@ -71,6 +74,7 @@ func NewKeystoneCollector() *KeyStoneCollector {
 
 	return &KeyStoneCollector{
 		metrics: metrics,
+		cloud:   cloud,
 	}
 }
 
@@ -81,7 +85,7 @@ func (kc *KeyStoneCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (kc *KeyStoneCollector) Collect(ch chan<- prometheus.Metric) {
-	client, err := authenticate()
+	client, err := authenticate(kc.cloud)
 	if err != nil {
 		fmt.Printf("Authentication error: %v\n", err)
 		return

@@ -22,7 +22,8 @@ type Config struct {
 		UseTLS    bool   `json:"use_tls" yaml:"use_tls"`
 	} `json:"harbor" yaml:"harbor"`
 	Keystone struct {
-		Enabled bool `json:"enabled" yaml:"enabled"`
+		Enabled    bool     `json:"enabled" yaml:"enabled"`
+		CloudNames []string `json:"cloud_names" yaml:"cloud_names"`
 	}
 }
 
