@@ -2,6 +2,7 @@ package exporters
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -15,6 +16,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type Cloud struct {
+	OpenstackName string `json:"openstack_name" yaml:"openstack_name"`
+	MetricName    string `json:"metric_name" yaml:"metric_name"`
+}
 type Metric struct {
 	Name   string
 	Labels []string
@@ -23,10 +28,12 @@ type Metric struct {
 
 type KeyStoneCollector struct {
 	metrics map[string]Metric
+	cloud   Cloud
 }
 
-func authenticate() (*gophercloud.ServiceClient, error) {
+func authenticate(cloud Cloud) (*gophercloud.ServiceClient, error) {
 	ctx := context.Background()
+	os.Setenv("OS_CLOUD", cloud.OpenstackName)
 	authOptions, endpointOptions, tlsConfig, err := clouds.Parse()
 	if err != nil {
 		fmt.Printf("could not parse cloud.yaml: %s\n", err)
@@ -46,7 +53,7 @@ func authenticate() (*gophercloud.ServiceClient, error) {
 	return identityClient, nil
 }
 
-func NewKeystoneCollector() *KeyStoneCollector {
+func NewKeystoneCollector(cloud Cloud) *KeyStoneCollector {
 	projectMetrics := []Metric{
 		{Name: "projects"},
 		{Name: "project_info", Labels: []string{
@@ -61,7 +68,7 @@ func NewKeystoneCollector() *KeyStoneCollector {
 			Name:   m.Name,
 			Labels: m.Labels,
 			Metric: prometheus.NewDesc(
-				prometheus.BuildFQName("openstack", "keystone", m.Name),
+				prometheus.BuildFQName("apiexporter", cloud.MetricName, m.Name),
 				fmt.Sprintf("Description of %s", m.Name),
 				m.Labels,
 				nil,
@@ -71,6 +78,7 @@ func NewKeystoneCollector() *KeyStoneCollector {
 
 	return &KeyStoneCollector{
 		metrics: metrics,
+		cloud:   cloud,
 	}
 }
 
@@ -81,7 +89,7 @@ func (kc *KeyStoneCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (kc *KeyStoneCollector) Collect(ch chan<- prometheus.Metric) {
-	client, err := authenticate()
+	client, err := authenticate(kc.cloud)
 	if err != nil {
 		fmt.Printf("Authentication error: %v\n", err)
 		return

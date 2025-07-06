@@ -44,7 +44,9 @@ func (a *Application) registerExporters() {
 		prometheus.MustRegister(exporters.NewHarborCollector(a.Config.Harbor.Address, a.Config.Harbor.Token, a.Config.Harbor.UseTLS))
 	}
 	if a.Config.Keystone.Enabled {
-		prometheus.MustRegister(exporters.NewKeystoneCollector())
+		for _, cloud := range a.Config.Keystone.Clouds {
+			prometheus.MustRegister(exporters.NewKeystoneCollector(cloud))
+		}
 	}
 }
 
