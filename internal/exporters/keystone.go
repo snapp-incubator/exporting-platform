@@ -64,7 +64,7 @@ func NewKeystoneCollector(cloud string) *KeyStoneCollector {
 			Name:   m.Name,
 			Labels: m.Labels,
 			Metric: prometheus.NewDesc(
-				prometheus.BuildFQName("openstack", "keystone", m.Name),
+				prometheus.BuildFQName("api_exporter", cloud, m.Name),
 				fmt.Sprintf("Description of %s", m.Name),
 				m.Labels,
 				nil,
