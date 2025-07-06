@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"exporting_platform/internal/exporters"
 	"fmt"
 	"os"
 	"strings"
@@ -22,8 +23,8 @@ type Config struct {
 		UseTLS    bool   `json:"use_tls" yaml:"use_tls"`
 	} `json:"harbor" yaml:"harbor"`
 	Keystone struct {
-		Enabled    bool     `json:"enabled" yaml:"enabled"`
-		CloudNames []string `json:"cloud_names" yaml:"cloud_names"`
+		Enabled bool              `json:"enabled" yaml:"enabled"`
+		Clouds  []exporters.Cloud `json:"clouds" yaml:"clouds"`
 	}
 }
 
