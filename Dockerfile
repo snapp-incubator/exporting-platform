@@ -1,9 +1,9 @@
-FROM golang:1.22
+FROM golang:1.25
 WORKDIR /app
 COPY ./ ./
 RUN cd cmd && go mod download && CGO_ENABLED=0 go build -o app .
 
-FROM alpine:3.17
+FROM alpine:3.22.1
 RUN apk --no-cache add ca-certificates
 WORKDIR /app
 COPY --from=0 /app/cmd/app ./
