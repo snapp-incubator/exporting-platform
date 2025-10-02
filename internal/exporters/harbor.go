@@ -2,6 +2,7 @@ package exporters
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -72,12 +73,18 @@ func (h *HarborCollector) collectHarborRegistryBackendHealthStatus(ch chan<- pro
 		return
 	}
 
-	defer resp.Body.Close()
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error happened", err)
+	responseBody, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		fmt.Println("Error happened", errRead)
 		return
 	}
+
+	defer func(b io.ReadCloser) {
+		if b == nil {
+			return
+		}
+		err = errors.Join(err, b.Close())
+	}(resp.Body)
 
 	var endpointData []registryEntry
 	err = json.Unmarshal(responseBody, &endpointData)
