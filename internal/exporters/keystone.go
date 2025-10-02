@@ -2,7 +2,6 @@ package exporters
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -33,22 +32,21 @@ type KeyStoneCollector struct {
 
 func authenticate(cloud Cloud) (*gophercloud.ServiceClient, error) {
 	ctx := context.Background()
-	os.Setenv("OS_CLOUD", cloud.OpenstackName)
-	authOptions, endpointOptions, tlsConfig, err := clouds.Parse()
+	authOptions, endpointOptions, tlsConfig, err := clouds.Parse(clouds.WithCloudName(cloud.OpenstackName))
 	if err != nil {
 		fmt.Printf("could not parse cloud.yaml: %s\n", err)
 		return nil, err
 	}
 
-	providerClient, err := config.NewProviderClient(ctx, authOptions, config.WithTLSConfig(tlsConfig))
-	if err != nil {
-		fmt.Printf("could not create provider client: %s\n", err)
-		return nil, err
+	providerClient, errClient := config.NewProviderClient(ctx, authOptions, config.WithTLSConfig(tlsConfig))
+	if errClient != nil {
+		fmt.Printf("could not create provider client: %s\n", errClient)
+		return nil, errClient
 	}
-	identityClient, err := openstack.NewIdentityV3(providerClient, endpointOptions)
-	if err != nil {
-		fmt.Printf("could not create identity client: %s\n", err)
-		return nil, err
+	identityClient, errIdentity := openstack.NewIdentityV3(providerClient, endpointOptions)
+	if errIdentity != nil {
+		fmt.Printf("could not create identity client: %s\n", errIdentity)
+		return nil, errIdentity
 	}
 	return identityClient, nil
 }
@@ -89,22 +87,22 @@ func (kc *KeyStoneCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (kc *KeyStoneCollector) Collect(ch chan<- prometheus.Metric) {
-	client, err := authenticate(kc.cloud)
-	if err != nil {
-		fmt.Printf("Authentication error: %v\n", err)
+	client, errAuth := authenticate(kc.cloud)
+	if errAuth != nil {
+		fmt.Printf("Authentication error: %v\n", errAuth)
 		return
 	}
 
 	ctx := context.Background()
-	allPages, err := projects.List(client, projects.ListOpts{}).AllPages(ctx)
-	if err != nil {
-		fmt.Printf("Error listing projects: %v\n", err)
+	allPages, errList := projects.List(client, projects.ListOpts{}).AllPages(ctx)
+	if errList != nil {
+		fmt.Printf("Error listing projects: %v\n", errList)
 		return
 	}
 
-	allProjects, err := projects.ExtractProjects(allPages)
-	if err != nil {
-		fmt.Printf("Error extracting projects: %v\n", err)
+	allProjects, errExtractProj := projects.ExtractProjects(allPages)
+	if errExtractProj != nil {
+		fmt.Printf("Error extracting projects: %v\n", errExtractProj)
 		return
 	}
 

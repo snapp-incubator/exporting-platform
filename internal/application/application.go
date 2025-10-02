@@ -16,35 +16,71 @@ import (
 
 type Application struct {
 	Config *configs.Config
+	Logger *log.Logger
 	Router *gin.Engine
 }
 
 func NewApplication(config *configs.Config) (*Application, error) {
 	app := &Application{Config: config}
-	app.registerRouter()
+
+	errLogger := app.registerLogger()
+	if errLogger != nil {
+		return nil, errLogger
+	}
+
+	app.Logger.Debug("Registering Router")
+	errRouter := app.registerRouter()
+	if errRouter != nil {
+		return nil, errRouter
+	}
+
+	app.Logger.Debug("Registering Routes")
 	app.registerRoutes()
+
+	app.Logger.Debug("Registering Exporters")
 	app.registerExporters()
 	return app, nil
 }
 
-func (a *Application) registerRouter() {
+func (a *Application) registerLogger() error {
+	logInstance := log.New()
+	logLevel, logLevelErr := log.ParseLevel(a.Config.Exporter.LogLevel)
+	if logLevelErr != nil {
+		return logLevelErr
+	}
+
+	logInstance.SetLevel(logLevel)
+
+	a.Logger = logInstance
+
+	return nil
+}
+
+func (a *Application) registerRouter() error {
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
-	router.Use(ginLogrus.Logger(log.StandardLogger()), gin.Recovery())
+
+	router.Use(ginLogrus.Logger(a.Logger), gin.Recovery())
+
 	a.Router = router
+
+	return nil
 }
 
 func (a *Application) registerRoutes() {
-	log.Debug("Registering Routes")
+	a.Logger.Debug("Registering Prometheus GIN Handler")
 	a.Router.GET(a.Config.Exporter.Path, prometheusGinHandler())
 }
 
 func (a *Application) registerExporters() {
-	log.Debug("Registering Exporters")
 	if a.Config.Harbor.Enabled {
+		a.Logger.Debug("Registering Harbor")
 		prometheus.MustRegister(exporters.NewHarborCollector(a.Config.Harbor.Address, a.Config.Harbor.Token, a.Config.Harbor.UseTLS))
 	}
+
 	if a.Config.Keystone.Enabled {
 		for _, cloud := range a.Config.Keystone.Clouds {
+			a.Logger.Debug("Registering ", cloud.OpenstackName)
 			prometheus.MustRegister(exporters.NewKeystoneCollector(cloud))
 		}
 	}
@@ -57,7 +93,7 @@ func (a *Application) Run(ctx context.Context) {
 	}
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.WithError(err).Fatal("Error on running router")
+			a.Logger.WithError(err).Fatal("Error on running router")
 		}
 	}()
 
@@ -65,9 +101,9 @@ func (a *Application) Run(ctx context.Context) {
 	shutdownCTX, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCTX); err != nil {
-		log.WithContext(ctx).WithError(err).Error("could not gracefully shutdown the server")
+		a.Logger.WithContext(ctx).WithError(err).Error("could not gracefully shutdown the server")
 	}
-	log.Debug("Router successfully closed")
+	a.Logger.Info("Router successfully closed")
 }
 
 func prometheusGinHandler() gin.HandlerFunc {

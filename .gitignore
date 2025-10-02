@@ -14,5 +14,9 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# Config Files
+configs/config_filled.yml
+clouds.yaml
+
 # IDE files
 .idea/

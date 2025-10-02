@@ -4,14 +4,23 @@ import (
 	"context"
 	"exporting_platform/configs"
 	"exporting_platform/internal/application"
+	"fmt"
 	log "github.com/sirupsen/logrus"
+	"os"
 	"time"
 )
 
 var config *configs.Config
 
+const defaultConfigPath = "./configs/config.yml"
+
 func init() {
-	cfg, err := configs.Load("./configs/config.yml")
+	var configPath = defaultConfigPath
+	if len(os.Args) > 1 {
+		configPath = os.Args[1]
+	}
+	fmt.Println("Reading config from:", configPath)
+	cfg, err := configs.Load(configPath)
 	if err != nil {
 		log.WithError(err).Fatal("Error while loading configurations")
 	}

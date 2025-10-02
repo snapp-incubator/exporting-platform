@@ -12,8 +12,9 @@ import (
 
 type Config struct {
 	Exporter struct {
-		Address string `json:"address" yaml:"address"`
-		Path    string `json:"path"    yaml:"path"`
+		Address  string `json:"address" yaml:"address"`
+		Path     string `json:"path"    yaml:"path"`
+		LogLevel string `json:"log_level" yaml:"log_level"`
 	} `json:"exporter" yaml:"exporter"`
 	Harbor struct {
 		Address   string `json:"address" yaml:"address"`
@@ -35,7 +36,7 @@ func Load(filePath string) (*Config, error) {
 			return nil, multierr.Combine(err, envErr)
 		}
 	}
-	cfg.setTokenFromFile()
+	cfg.setHarborTokenFromFile()
 	return cfg, nil
 }
 
@@ -43,6 +44,7 @@ func Default() *Config {
 	cfg := &Config{}
 	cfg.Exporter.Address = "0.0.0.0:9090"
 	cfg.Exporter.Path = "/metrics"
+	cfg.Exporter.LogLevel = "Info"
 
 	cfg.Harbor.Enabled = true
 	cfg.Harbor.UseTLS = true
@@ -52,10 +54,15 @@ func Default() *Config {
 	return cfg
 }
 
-func (c *Config) setTokenFromFile() {
+func (c *Config) setHarborTokenFromFile() {
+	if !c.Harbor.Enabled {
+		return
+	}
+
 	if c.Harbor.Token != "" {
 		return
 	}
+
 	if c.Harbor.TokenPath != "" {
 		data, err := os.ReadFile(c.Harbor.TokenPath)
 		if err != nil {

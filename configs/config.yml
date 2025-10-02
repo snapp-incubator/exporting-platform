@@ -3,3 +3,7 @@ exporter:
 harbor:
   address: "<address of harbor (host + port)>"
   token_path: "<path to token file>"
+keystone:
+  clouds:
+    - openstack_name: "<name cluster>"
+      metric_name: "<name prefix>"

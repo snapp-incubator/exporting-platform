@@ -5,7 +5,11 @@
 To run the code in your development environment:
 
 ```shell
+# run with default config located in configs/config.yml
 go run cmd/main.go
+
+# run with filled config located in configs/config_filled.yml
+go run cmd/main.go configs/config_filled.yml
 ```
 
 ## Add Exporters
@@ -15,7 +19,4 @@ To add a new exporter, you should create a file inside [internal/exporters](inte
 After creating New function, you should implement two methods for your struct.
 
 - Describe: which passes a read-only channel of type `*prometheus.Desc` and you should pass each Desc object you had in struct to it.
-- Collect: which passes a read-only channel of type `prometheus.Metric` and you should implement the exporting logic here. After that, you should return objects of type `prometheus.MustNewConstMetric` to the channel. 
-
-
-
+- Collect: which passes a read-only channel of type `prometheus.Metric` and you should implement the exporting logic here. After that, you should return objects of type `prometheus.MustNewConstMetric` to the channel.
