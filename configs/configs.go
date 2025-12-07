@@ -27,6 +27,14 @@ type Config struct {
 		Enabled bool              `json:"enabled" yaml:"enabled"`
 		Clouds  []exporters.Cloud `json:"clouds" yaml:"clouds"`
 	}
+	Netbox struct {
+        Enabled   bool   `yaml:"enabled"`
+        Address   string `yaml:"address"`
+        Token     string `yaml:"token"`
+        TokenPath string `yaml:"token_path"`
+        UseTLS    bool   `yaml:"use_tls"`
+        IgnoreTenants  []string `yaml:"ignore_tenants"`
+    } `yaml:"netbox"`
 }
 
 func Load(filePath string) (*Config, error) {
@@ -37,6 +45,8 @@ func Load(filePath string) (*Config, error) {
 		}
 	}
 	cfg.setHarborTokenFromFile()
+	cfg.setNetboxTokenFromFile()
+
 	return cfg, nil
 }
 
@@ -49,7 +59,10 @@ func Default() *Config {
 	cfg.Harbor.Enabled = true
 	cfg.Harbor.UseTLS = true
 
-	cfg.Keystone.Enabled = true
+	cfg.Keystone.Enabled = false
+
+	cfg.Netbox.Enabled = true
+    cfg.Netbox.UseTLS = true
 
 	return cfg
 }
@@ -71,4 +84,22 @@ func (c *Config) setHarborTokenFromFile() {
 		}
 		c.Harbor.Token = strings.TrimSpace(string(data))
 	}
+}
+func (c *Config) setNetboxTokenFromFile() {
+    if !c.Netbox.Enabled {
+        return
+    }
+
+    if c.Netbox.Token != "" {
+        return
+    }
+
+    if c.Netbox.TokenPath != "" {
+        data, err := os.ReadFile(c.Netbox.TokenPath)
+        if err != nil {
+            fmt.Println("could not read netbox token file:", err)
+            os.Exit(4)
+        }
+        c.Netbox.Token = strings.TrimSpace(string(data))
+    }
 }
