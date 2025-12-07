@@ -257,7 +257,7 @@ func (f *NetboxFetcher) fetchJSON(path string, dst interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+    defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	return json.Unmarshal(body, dst)
