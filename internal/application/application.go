@@ -84,7 +84,20 @@ func (a *Application) registerExporters() {
 			prometheus.MustRegister(exporters.NewKeystoneCollector(cloud))
 		}
 	}
-}
+	if a.Config.Netbox.Enabled {
+    a.Logger.Debug("Registering NetBox Collector")
+
+ exporters.StartNetboxFetcher(
+    a.Config.Netbox.Address,
+    a.Config.Netbox.Token,
+    a.Config.Netbox.UseTLS,
+    a.Config.Netbox.IgnoreTenants,
+)
+
+prometheus.MustRegister(
+    exporters.NewNetBoxSnapshotCollector("/tmp/netbox.prom"),
+)
+}}
 
 func (a *Application) Run(ctx context.Context) {
 	srv := http.Server{

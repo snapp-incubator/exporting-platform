@@ -1,9 +1,19 @@
 exporter:
   address: "<address for our exporter to serve on (host + port)>"
 harbor:
+  enabled: false
   address: "<address of harbor (host + port)>"
   token_path: "<path to token file>"
 keystone:
+  enabled: false
   clouds:
     - openstack_name: "<name cluster>"
       metric_name: "<name prefix>"
+netbox:
+  enabled: true
+  address: "netbox.prod.dc.snappcloud.io"
+  use_tls: true
+  token: ""
+  ignore_tenants:
+    - cloud
+    - dc
