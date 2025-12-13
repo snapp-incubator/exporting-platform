@@ -14,8 +14,6 @@ import (
 	"time"
 )
 
-
-
 type Tenant struct {
 	Name string `json:"name"`
 	Slug string `json:"slug"`
@@ -48,29 +46,28 @@ type InventoryItem struct {
 	Description string `json:"description"`
 }
 
-
 var ramGBRegex = regexp.MustCompile(`(?i)(\d+)\s*gb`)
 
 var ssdGBRegex = regexp.MustCompile(`(?i)(\d+)\s*gb`)
 
-
+var generationPatterns = map[int][]string{
+	9:  {"g9", "gen9"},
+	10: {"g10", "gen10"},
+	11: {"g11", "gen11"},
+}
 
 func detectGeneration(model string) int {
 	m := strings.ToLower(model)
 
-	if strings.Contains(m, "g9") || strings.Contains(m, "gen9") {
-		return 9
+	for gen, patterns := range generationPatterns {
+		for _, p := range patterns {
+			if strings.Contains(m, p) {
+				return gen
+			}
+		}
 	}
-	if strings.Contains(m, "g10") || strings.Contains(m, "gen10") {
-		return 10
-	}
-	if strings.Contains(m, "g11") || strings.Contains(m, "gen11") {
-		return 11
-	}
-
 	return 0
 }
-
 
 type NetboxFetcher struct {
 	Address       string
@@ -106,8 +103,6 @@ func StartNetboxFetcher(address, token string, useTLS bool, ignore []string) {
 
 	go f.loop()
 }
-
-
 
 func (f *NetboxFetcher) loop() {
 	f.logf("Starting NetBox fetcher (interval=%s)", f.Interval)
@@ -157,8 +152,6 @@ func (f *NetboxFetcher) run() {
 
 	f.logf("Snapshot updated (size=%d bytes)", len(metrics))
 }
-
-
 
 func (f *NetboxFetcher) buildSnapshotMetrics() ([]byte, error) {
 
@@ -257,32 +250,36 @@ func (f *NetboxFetcher) fetchJSON(path string, dst interface{}) error {
 	if err != nil {
 		return err
 	}
-    defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	return json.Unmarshal(body, dst)
 }
 
 func (f *NetboxFetcher) fetchTenants() ([]Tenant, error) {
-	var obj struct{ Results []Tenant `json:"results"` }
+	var obj struct {
+		Results []Tenant `json:"results"`
+	}
 	err := f.fetchJSON("/api/tenancy/tenants/?limit=2000", &obj)
 	return obj.Results, err
 }
 
 func (f *NetboxFetcher) fetchDevicesForTenant(slug string) ([]BaremetalDevice, error) {
 
-	var obj struct{ Results []BaremetalDevice `json:"results"` }
+	var obj struct {
+		Results []BaremetalDevice `json:"results"`
+	}
 	err := f.fetchJSON("/api/dcim/devices/?role=server&tenant="+slug+"&limit=2000&expand=device_type", &obj)
 	return obj.Results, err
 }
 
 func (f *NetboxFetcher) fetchInventory(id int) ([]InventoryItem, error) {
-	var obj struct{ Results []InventoryItem `json:"results"` }
+	var obj struct {
+		Results []InventoryItem `json:"results"`
+	}
 	err := f.fetchJSON(fmt.Sprintf("/api/dcim/inventory-items/?device_id=%d&limit=500", id), &obj)
 	return obj.Results, err
 }
-
-
 
 func filterTenants(all []Tenant, ignored []string) []Tenant {
 	out := []Tenant{}
