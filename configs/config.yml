@@ -1,5 +1,5 @@
 exporter:
-  address: "<address for our exporter to serve on (host + port)>"
+  address: "localhost:9091"
 harbor:
   enabled: false
   address: "<address of harbor (host + port)>"
@@ -13,7 +13,6 @@ netbox:
   enabled: true
   address: "netbox.prod.dc.snappcloud.io"
   use_tls: true
-  token: ""
   ignore_tenants:
     - cloud
     - dc

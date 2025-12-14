@@ -5,6 +5,8 @@ import (
 	"exporting_platform/configs"
 	"exporting_platform/internal/exporters"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -85,19 +87,24 @@ func (a *Application) registerExporters() {
 		}
 	}
 	if a.Config.Netbox.Enabled {
-    a.Logger.Debug("Registering NetBox Collector")
+		a.Logger.Debug("Registering NetBox Collector")
+		netboxToken := strings.TrimSpace(os.Getenv("NETBOX_TOKEN"))
 
- exporters.StartNetboxFetcher(
-    a.Config.Netbox.Address,
-    a.Config.Netbox.Token,
-    a.Config.Netbox.UseTLS,
-    a.Config.Netbox.IgnoreTenants,
-)
+		if netboxToken == "" {
+			a.Logger.Fatal("NETBOX_TOKEN is not set")
+		}
+		exporters.StartNetboxFetcher(
+			a.Config.Netbox.Address,
+			netboxToken,
+			a.Config.Netbox.UseTLS,
+			a.Config.Netbox.IgnoreTenants,
+		)
 
-prometheus.MustRegister(
-    exporters.NewNetBoxSnapshotCollector("/tmp/netbox.prom"),
-)
-}}
+		prometheus.MustRegister(
+			exporters.NewNetBoxSnapshotCollector("/tmp/netbox.prom"),
+		)
+	}
+}
 
 func (a *Application) Run(ctx context.Context) {
 	srv := http.Server{
