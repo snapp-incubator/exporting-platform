@@ -243,8 +243,11 @@ func (f *NetboxFetcher) fetchJSON(path string, dst interface{}) error {
 	if f.UseTLS {
 		schema = "https://"
 	}
-	req, _ := http.NewRequest("GET", schema+f.Address+path, nil)
+
+	url := schema + f.Address + path
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("Authorization", "Token "+f.Token)
+	req.Header.Set("Accept", "application/json")
 
 	resp, err := f.httpClient.Do(req)
 	if err != nil {
@@ -253,6 +256,12 @@ func (f *NetboxFetcher) fetchJSON(path string, dst interface{}) error {
 	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("netbox http %d from %s: %s",
+			resp.StatusCode, path, string(body))
+	}
+
 	return json.Unmarshal(body, dst)
 }
 
