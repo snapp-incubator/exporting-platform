@@ -5,6 +5,8 @@ import (
 	"exporting_platform/configs"
 	"exporting_platform/internal/exporters"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -83,6 +85,24 @@ func (a *Application) registerExporters() {
 			a.Logger.Debug("Registering ", cloud.OpenstackName)
 			prometheus.MustRegister(exporters.NewKeystoneCollector(cloud))
 		}
+	}
+	if a.Config.Netbox.Enabled {
+		a.Logger.Debug("Registering NetBox Collector")
+		netboxToken := strings.TrimSpace(os.Getenv("NETBOX_TOKEN"))
+
+		if netboxToken == "" {
+			a.Logger.Fatal("NETBOX_TOKEN is not set")
+		}
+		exporters.StartNetboxFetcher(
+			a.Config.Netbox.Address,
+			netboxToken,
+			a.Config.Netbox.UseTLS,
+			a.Config.Netbox.IgnoreTenants,
+		)
+
+		prometheus.MustRegister(
+			exporters.NewNetBoxSnapshotCollector("/tmp/netbox.prom"),
+		)
 	}
 }
 
