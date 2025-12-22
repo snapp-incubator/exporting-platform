@@ -169,8 +169,10 @@ func (f *NetboxFetcher) buildSnapshotMetrics() ([]byte, error) {
 		devices, _ := f.fetchDevicesForTenant(t.Slug)
 
 		fmt.Fprintf(buf,
-			"netbox_tenant_baremetal_count{tenant=%q} %d\n",
-			t.Slug, len(devices),
+			"netbox_tenant_baremetal_count{tenant_slug=%q, tenant_name=%q} %d\n",
+			t.Slug,
+			t.Name,
+			len(devices),
 		)
 
 		for _, d := range devices {
@@ -178,8 +180,14 @@ func (f *NetboxFetcher) buildSnapshotMetrics() ([]byte, error) {
 			gen := detectGeneration(d.DeviceType.Model)
 
 			fmt.Fprintf(buf,
-				"netbox_baremetal_info{id=%q,name=%q,site=%q,tenant=%q} %d\n",
-				fmt.Sprint(d.ID), d.Name, d.Site.Name, d.Tenant.Slug, gen,
+				"netbox_baremetal_info{id=%q,name=%q,site=%q,tenant_slug=%q,tenant_name=%q} %d\n",
+				fmt.Sprint(d.ID),
+				d.Name,
+				d.Site.Name,
+				d.Tenant.Slug,
+				//for future proof if the slug or changed
+				d.Tenant.Name,
+				gen,
 			)
 
 			items, _ := f.fetchInventory(d.ID)
@@ -210,8 +218,14 @@ func (f *NetboxFetcher) buildSnapshotMetrics() ([]byte, error) {
 				}
 			}
 
-			labels := fmt.Sprintf("id=%q,name=%q,site=%q,tenant=%q",
-				fmt.Sprint(d.ID), d.Name, d.Site.Name, d.Tenant.Slug)
+			labels := fmt.Sprintf(
+				"id=%q,name=%q,site=%q,tenant_slug=%q,tenant_name=%q",
+				fmt.Sprint(d.ID),
+				d.Name,
+				d.Site.Name,
+				d.Tenant.Slug,
+				d.Tenant.Name,
+			)
 
 			fmt.Fprintf(buf, "netbox_baremetal_ram_total_gb{%s} %.0f\n", labels, ramTotal)
 			fmt.Fprintf(buf, "netbox_baremetal_ram_module_count{%s} %d\n", labels, len(ramModules))
