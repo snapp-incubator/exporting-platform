@@ -218,8 +218,14 @@ func (f *NetboxFetcher) buildSnapshotMetrics() ([]byte, error) {
 				}
 			}
 
-			labels := fmt.Sprintf("id=%q,name=%q,site=%q,tenant=%q",
-				fmt.Sprint(d.ID), d.Name, d.Site.Name, d.Tenant.Slug)
+			labels := fmt.Sprintf(
+				"id=%q,name=%q,site=%q,tenant_slug=%q,tenant_name=%q",
+				fmt.Sprint(d.ID),
+				d.Name,
+				d.Site.Name,
+				d.Tenant.Slug,
+				d.Tenant.Name,
+			)
 
 			fmt.Fprintf(buf, "netbox_baremetal_ram_total_gb{%s} %.0f\n", labels, ramTotal)
 			fmt.Fprintf(buf, "netbox_baremetal_ram_module_count{%s} %d\n", labels, len(ramModules))
