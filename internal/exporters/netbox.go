@@ -74,6 +74,7 @@ type NetboxFetcher struct {
 	Token         string
 	UseTLS        bool
 	IgnoreTenants []string
+	AllowedSites  []string
 
 	SnapshotPath string
 	Interval     time.Duration
@@ -85,12 +86,13 @@ type NetboxFetcher struct {
 var lastSnapshotMemory []byte
 var lastSnapshotMu sync.RWMutex
 
-func StartNetboxFetcher(address, token string, useTLS bool, ignore []string) {
+func StartNetboxFetcher(address, token string, useTLS bool, ignore []string, allowedSites []string) {
 	f := &NetboxFetcher{
 		Address:       address,
 		Token:         token,
 		UseTLS:        useTLS,
 		IgnoreTenants: ignore,
+		AllowedSites:  allowedSites,
 
 		SnapshotPath: "/tmp/netbox.prom",
 		Interval:     5 * time.Minute,
@@ -167,6 +169,7 @@ func (f *NetboxFetcher) buildSnapshotMetrics() ([]byte, error) {
 	for _, t := range tenants {
 
 		devices, _ := f.fetchDevicesForTenant(t.Slug)
+		devices = filterDevicesBySite(devices, f.AllowedSites)
 
 		fmt.Fprintf(buf,
 			"netbox_tenant_baremetal_count{tenant=%q} %d\n",
@@ -288,6 +291,23 @@ func (f *NetboxFetcher) fetchInventory(id int) ([]InventoryItem, error) {
 	}
 	err := f.fetchJSON(fmt.Sprintf("/api/dcim/inventory-items/?device_id=%d&limit=500", id), &obj)
 	return obj.Results, err
+}
+
+func filterDevicesBySite(all []BaremetalDevice, allowedSites []string) []BaremetalDevice {
+	if len(allowedSites) == 0 {
+		return all
+	}
+	allow := map[string]bool{}
+	for _, s := range allowedSites {
+		allow[strings.ToLower(strings.TrimSpace(s))] = true
+	}
+	out := []BaremetalDevice{}
+	for _, d := range all {
+		if allow[strings.ToLower(d.Site.Name)] {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 func filterTenants(all []Tenant, ignored []string) []Tenant {

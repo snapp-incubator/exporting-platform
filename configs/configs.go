@@ -34,6 +34,7 @@ type Config struct {
 		TokenPath     string   `json:"token_path" yaml:"token_path"`
 		UseTLS        bool     `json:"use_tls" yaml:"use_tls"`
 		IgnoreTenants []string `json:"ignore_tenants" yaml:"ignore_tenants"`
+		AllowedSites  []string `json:"allowed_sites" yaml:"allowed_sites" env:"NETBOX_ALLOWED_SITES"`
 	} `json:"netbox" yaml:"netbox"`
 }
 

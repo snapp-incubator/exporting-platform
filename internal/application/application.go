@@ -98,6 +98,7 @@ func (a *Application) registerExporters() {
 			netboxToken,
 			a.Config.Netbox.UseTLS,
 			a.Config.Netbox.IgnoreTenants,
+			a.Config.Netbox.AllowedSites,
 		)
 
 		prometheus.MustRegister(
