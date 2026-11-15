@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"regexp"
@@ -48,7 +49,38 @@ type InventoryItem struct {
 
 var ramGBRegex = regexp.MustCompile(`(?i)(\d+)\s*gb`)
 
-var ssdGBRegex = regexp.MustCompile(`(?i)(\d+)\s*gb`)
+// diskSizeRegex matches a size token such as "960 GB", "3.84 TB" or
+// "12Gb/s"; the third group catches a throughput suffix so interface speeds
+// can be told apart from capacities.
+var diskSizeRegex = regexp.MustCompile(`(?i)(\d+(?:\.\d+)?)\s*(tb|gb)(/s|ps)?`)
+
+// parseDiskSizeGB extracts a disk's capacity in GB from its inventory text.
+// NetBox names mix formats: "SSD SATA 960 GB-<serial>", "SSD SAS 3.84 TB-<serial>"
+// and "3.84 TB 12 GB SAS SSD", where the GB figure after a TB capacity is the
+// interface speed. A TB token therefore wins over any GB token, and explicit
+// throughput tokens ("6Gb/s", "12Gbps") are never a capacity.
+func parseDiskSizeGB(text string) (int, bool) {
+	firstGB := -1.0
+	for _, m := range diskSizeRegex.FindAllStringSubmatch(text, -1) {
+		if m[3] != "" {
+			continue
+		}
+		v, err := strconv.ParseFloat(m[1], 64)
+		if err != nil {
+			continue
+		}
+		if strings.EqualFold(m[2], "tb") {
+			return int(math.Round(v * 1000)), true
+		}
+		if firstGB < 0 {
+			firstGB = v
+		}
+	}
+	if firstGB < 0 {
+		return 0, false
+	}
+	return int(math.Round(firstGB)), true
+}
 
 var generationPatterns = map[int][]string{
 	9:  {"g9", "gen9"},
@@ -205,8 +237,7 @@ func (f *NetboxFetcher) buildSnapshotMetrics() ([]byte, error) {
 				}
 
 				if strings.Contains(text, "ssd") {
-					if m := ssdGBRegex.FindStringSubmatch(text); len(m) == 2 {
-						gb, _ := strconv.Atoi(m[1])
+					if gb, ok := parseDiskSizeGB(text); ok {
 						ssdModules = append(ssdModules, gb)
 						ssdTotal += float64(gb)
 					}
